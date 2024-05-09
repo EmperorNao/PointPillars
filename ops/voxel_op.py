@@ -10,7 +10,7 @@ def hard_voxelize(
         coors_range,
         max_points,
         max_voxels,
-        NDim = 3):
+        NDim = 3, determ=False):
     """
         return num voxels
     """
