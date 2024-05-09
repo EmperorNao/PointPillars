@@ -95,7 +95,6 @@ def point_cmp(a, b, center):
 
 
 def box_overlap(box_a, box_b):
-
     a_x1 = box_a[0]
     a_y1 = box_a[1]
     a_x2 = box_a[2]
@@ -161,6 +160,8 @@ def box_overlap(box_a, box_b):
             cross_points[cnt] = box_a_corners[k]
             cnt += 1
 
+    if cnt == 0:
+        return 0.0
     poly_center.x /= cnt
     poly_center.y /= cnt
 
@@ -198,7 +199,10 @@ def iou_bev(box_a, box_b):
 def boxes_iou_bev_gpu(boxes_a, boxes_b, ans_iou):
     for i, box_a in enumerate(boxes_a):
         for j, box_b in enumerate(boxes_b):
-            ans = iou_bev(box_a, box_b)
+            if (box_a == box_b).all():
+                ans = 1.0
+            else:
+                ans = iou_bev(box_a, box_b)
             ans_iou[i][j] = ans
             ans_iou[j][i] = ans
 
