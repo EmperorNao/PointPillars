@@ -238,3 +238,7 @@ def nms_gpu(boxes, keep, nms_overlap_thresh, device_id):
     print(to_save)
     keep[:len(to_save)] = boxes[to_save]
     return len(to_save)
+
+
+def nms_normal_gpu():
+    return 
