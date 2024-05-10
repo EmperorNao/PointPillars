@@ -36,9 +36,13 @@ class BaseSampler():
 class Kitti(Dataset):
 
     CLASSES = {
-        'Pedestrian': 0, 
-        'Cyclist': 1, 
-        'Car': 2
+        # For nuscenes: 'pedestrian', 'bicycle', 'barrier', 'car', 'truck', 'traffic_cone', 'construction_vehicle', 'motorcycle', 'bus'
+        'pedestrian': 0,
+        'bicycle': 1,
+        'car': 2
+        # 'Pedestrian': 0, 
+        # 'Cyclist': 1, 
+        # 'Car': 2
         }
 
     def __init__(self, data_root, split, pts_prefix='velodyne_reduced'):
@@ -57,7 +61,7 @@ class Kitti(Dataset):
         self.data_aug_config=dict(
             db_sampler=dict(
                 db_sampler=db_sampler,
-                sample_groups=dict(Car=15, Pedestrian=10, Cyclist=10)
+                sample_groups=dict(car=15, pedestrian=10, bicycle=10)#dict(Car=15, Pedestrian=10, Cyclist=10)
                 ),
             object_noise=dict(
                 num_try=100,
@@ -86,7 +90,9 @@ class Kitti(Dataset):
             db_infos[k] = [item for item in v if item['difficulty'] != -1]
 
         # 2. filter_by_min_points, dict(Car=5, Pedestrian=10, Cyclist=10)
-        filter_thrs = dict(Car=5, Pedestrian=10, Cyclist=10)
+        # filter_thrs = dict(Car=5, Pedestrian=10, Cyclist=10)
+        filter_thrs = dict(car=5, pedestrian=10, bicycle=10)
+        # print(f"{db_infos.keys()=}")
         for cat in self.CLASSES:
             filter_thr = filter_thrs[cat]
             db_infos[cat] = [item for item in db_infos[cat] if item['num_points_in_gt'] >= filter_thr]

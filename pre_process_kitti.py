@@ -35,7 +35,7 @@ def judge_difficulty(annotation_dict):
 def create_data_info_pkl(data_root, data_type, prefix, label=True, db=False):
     sep = os.path.sep
     print(f"Processing {data_type} data..")
-    ids_file = os.path.join(CUR, 'dataset', 'ImageSets', f'{data_type}.txt')
+    ids_file = os.path.join(CUR, 'dataset', 'ImageSetsNuscenes', f'{data_type}.txt')
     with open(ids_file, 'r') as f:
         ids = [id.strip() for id in f.readlines()]
     
@@ -58,7 +58,7 @@ def create_data_info_pkl(data_root, data_type, prefix, label=True, db=False):
         cur_info_dict['image'] = {
             'image_shape': image_shape,
             'image_path': sep.join(img_path.split(sep)[-3:]), 
-            'image_idx': int(id),
+            'image_idx': id,
         }
 
         calib_dict = read_calib(calib_path)
@@ -104,12 +104,12 @@ def create_data_info_pkl(data_root, data_type, prefix, label=True, db=False):
                 for j in range(n_valid_bbox):
                     db_points = lidar_points[indices[:, j]]
                     db_points[:, :3] -= bboxes_lidar[j, :3]
-                    db_points_saved_name = os.path.join(db_points_saved_path, f'{int(id)}_{name[j]}_{j}.bin')
+                    db_points_saved_name = os.path.join(db_points_saved_path, f'{id}_{name[j]}_{j}.bin')
                     write_points(db_points, db_points_saved_name)
 
                     db_info={
                         'name': name[j],
-                        'path': os.path.join(os.path.basename(db_points_saved_path), f'{int(id)}_{name[j]}_{j}.bin'),
+                        'path': os.path.join(os.path.basename(db_points_saved_path), f'{id}_{name[j]}_{j}.bin'),
                         'box3d_lidar': bboxes_lidar[j],
                         'difficulty': annotation_dict['difficulty'][j], 
                         'num_points_in_gt': len(db_points), 
@@ -119,7 +119,7 @@ def create_data_info_pkl(data_root, data_type, prefix, label=True, db=False):
                     else:
                         kitti_dbinfos_train[name[j]].append(db_info)
         
-        kitti_infos_dict[int(id)] = cur_info_dict
+        kitti_infos_dict[id] = cur_info_dict
 
     saved_path = os.path.join(data_root, f'{prefix}_infos_{data_type}.pkl')
     write_pickle(kitti_infos_dict, saved_path)
