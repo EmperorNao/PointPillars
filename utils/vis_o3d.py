@@ -27,7 +27,7 @@ LINES = [
 def npy2ply(npy):
     ply = o3d.geometry.PointCloud()
     ply.points = o3d.utility.Vector3dVector(npy[:, :3])
-    density = npy[:, 3]
+    density = np.full(npy.shape[0], 0.0)
     colors = [[item, item, item] for item in density]
     ply.colors = o3d.utility.Vector3dVector(colors)
     return ply

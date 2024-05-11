@@ -15,11 +15,11 @@ def write_pickle(results, file_path):
         pickle.dump(results, f)
 
 
-def read_points(file_path, dim=4):
+def read_points(file_path, dim=5):
     suffix = os.path.splitext(file_path)[1] 
     assert suffix in ['.bin', '.ply']
     if suffix == '.bin':
-        return np.fromfile(file_path, dtype=np.float32).reshape(-1, dim)
+        return np.fromfile(file_path, dtype=np.float32).reshape(-1, dim)[:, :4]
     else:
         raise NotImplementedError
 
