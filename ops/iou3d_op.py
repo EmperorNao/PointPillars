@@ -186,7 +186,6 @@ def boxes_overlap_bev_gpu(boxes_a, boxes_b, ans_overlap):
         for j, box_b in enumerate(boxes_b):
             ans = box_overlap(box_a, box_b)
             ans_overlap[i][j] = ans
-            ans_overlap[j][i] = ans
 
 
 def iou_bev(box_a, box_b):
@@ -197,6 +196,8 @@ def iou_bev(box_a, box_b):
 
 
 def boxes_iou_bev_gpu(boxes_a, boxes_b, ans_iou):
+    print(ans_iou.shape)
+    print(boxes_a.shape, boxes_b.shape)
     for i, box_a in enumerate(boxes_a):
         for j, box_b in enumerate(boxes_b):
             if (box_a == box_b).all():
@@ -204,7 +205,6 @@ def boxes_iou_bev_gpu(boxes_a, boxes_b, ans_iou):
             else:
                 ans = iou_bev(box_a, box_b)
             ans_iou[i][j] = ans
-            ans_iou[j][i] = ans
 
 
 def nms_gpu(boxes, keep, nms_overlap_thresh, device_id):
@@ -214,7 +214,6 @@ def nms_gpu(boxes, keep, nms_overlap_thresh, device_id):
     to_reject.fill_(1)
 
     for index, box in enumerate(boxes):
-        print(f"{index=}")
         if not to_reject[index]:
             continue
 
@@ -226,17 +225,13 @@ def nms_gpu(boxes, keep, nms_overlap_thresh, device_id):
         ious = []
 
         for tg_box in target_boxes:
-            print(f"{tg_box=}")
             ious.append(iou_bev(box, tg_box))
-        print(f"{ious=}")
 
         rej = torch.where(torch.Tensor(ious) > nms_overlap_thresh)[0] + index + 1
         to_reject[rej] = 0
-        print(f"{to_reject=}")
     
     to_save = torch.where(to_reject)[0]
-    print(to_save)
-    keep[:len(to_save)] = boxes[to_save]
+    keep[:len(to_save)] = to_save
     return len(to_save)
 
 

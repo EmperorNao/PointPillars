@@ -557,7 +557,6 @@ def keep_bbox_from_image_range(result, tr_velo_to_cam, r0_rect, P2, image_shape)
     return: dict(lidar_bboxes, labels, scores, bboxes2d, camera_bboxes)
     '''
     h, w = image_shape
-
     lidar_bboxes = result['lidar_bboxes']
     labels = result['labels']
     scores = result['scores']
