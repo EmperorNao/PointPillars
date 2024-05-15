@@ -80,6 +80,9 @@ def create_data_info_pkl(data_root, data_type, prefix, split=None, label=True, d
         if label:
             label_path = os.path.join(data_root, split, 'label_2', f'{id}.txt')
             annotation_dict = read_label(label_path)
+            if not len(annotation_dict):
+                print(f"Skipping {id} because it has no objects, probably")
+                continue
             annotation_dict['difficulty'] = judge_difficulty(annotation_dict)
             annotation_dict['num_points_in_gt'] = get_points_num_in_bbox(
                 points=reduced_lidar_points,

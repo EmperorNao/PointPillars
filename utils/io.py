@@ -76,11 +76,11 @@ def read_calib(file_path, extend_matrix=True):
 
 
 def read_label(file_path):
+    annotation = {}
     with open(file_path, 'r') as f:
         lines = f.readlines()
     try:
         lines = [line.strip().split(' ') for line in lines]
-        annotation = {}
         annotation['name'] = np.array([line[0] for line in lines])
         annotation['truncated'] = np.array([line[1] for line in lines], dtype=np.float32)
         annotation['occluded'] = np.array([line[2] for line in lines], dtype=np.int32)
@@ -91,7 +91,7 @@ def read_label(file_path):
         annotation['rotation_y'] = np.array([line[14] for line in lines], dtype=np.float32)
     except:
         print(lines)
-        
+
     return annotation
 
 
