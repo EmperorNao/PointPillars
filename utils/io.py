@@ -90,6 +90,7 @@ def read_label(file_path):
         annotation['location'] = np.array([line[11:14] for line in lines], dtype=np.float32)
         annotation['rotation_y'] = np.array([line[14] for line in lines], dtype=np.float32)
     except:
+        annotation = {}
         print(lines)
 
     return annotation
