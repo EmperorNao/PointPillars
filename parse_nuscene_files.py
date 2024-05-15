@@ -1,4 +1,5 @@
 import os
+import argparse
 
 
 def parse_files(path):
@@ -13,10 +14,13 @@ def main(path_to_data, path_to_write):
 
     val_ids = parse_files(os.path.join(path_to_data, "val", "image_2"))
     with open(os.path.join(path_to_write, "val.txt"), "w+") as f:
-        print("\n".join(train_ids), file=f)
+        print("\n".join(val_ids), file=f)
 
 
 if __name__ == "__main__":
-    path_to_data = "nuscenes_kitti"
-    path_to_write = "dataset/ImageSetsNuscenes"
-    main(path_to_data, path_to_write)
+    parser = argparse.ArgumentParser(description='NuScenes parser')
+    parser.add_argument('--path_to_data', default='nuscenes_kitti')
+    parser.add_argument('--path_to_write', default='dataset/ImageSetsNuscenes')
+    args = parser.parse_args()
+
+    main(args.path_to_data, args.path_to_write)
