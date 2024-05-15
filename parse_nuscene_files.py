@@ -7,16 +7,13 @@ def parse_files(path):
 
 
 def main(path_to_data, path_to_write):
-    train_ids = parse_files(os.path.join(path_to_data, "training", "image_2"))
+    train_ids = parse_files(os.path.join(path_to_data, "train", "image_2"))
     with open(os.path.join(path_to_write, "train.txt"), "w+") as f:
         print("\n".join(train_ids), file=f)
 
+    val_ids = parse_files(os.path.join(path_to_data, "val", "image_2"))
     with open(os.path.join(path_to_write, "val.txt"), "w+") as f:
-        print("\n".join(train_ids), file=f)        
-
-    test_ids = parse_files(os.path.join(path_to_data, "testing", "image_2"))
-    with open(os.path.join(path_to_write, "test.txt"), "w+") as f:
-        print("\n".join(test_ids), file=f)    
+        print("\n".join(train_ids), file=f)
 
 
 if __name__ == "__main__":
