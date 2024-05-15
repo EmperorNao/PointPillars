@@ -65,7 +65,9 @@ def main(args):
     for epoch in range(args.max_epoch):
         print('=' * 20, epoch, '=' * 20)
         train_step, val_step = 0, 0
-        for i, data_dict in enumerate(tqdm(train_dataloader[:args.clip_epoch])):
+        for i, data_dict in enumerate(tqdm(train_dataloader)):
+            if i >= args.clip_epoch:
+                break
             if not args.no_cuda:
                 # move the tensors to the cuda
                 for key in data_dict:
@@ -138,7 +140,9 @@ def main(args):
             continue
         pointpillars.eval()
         with torch.no_grad():
-            for i, data_dict in enumerate(tqdm(val_dataloader[:args.clip_epoch])):
+            for i, data_dict in enumerate(tqdm(val_dataloader)):
+                if i >= args.clip_epoch:
+                    break
                 if not args.no_cuda:
                     # move the tensors to the cuda
                     for key in data_dict:
