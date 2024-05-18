@@ -69,6 +69,8 @@ def main(args):
         print('=' * 20, epoch, '=' * 20)
         train_step, val_step = 0, 0
         for i, data_dict in enumerate(tqdm(train_dataloader)):
+            if i >= args.clip_epoch:
+                break
             if not args.no_cuda:
                 # move the tensors to the cuda
                 for key in data_dict:
@@ -142,6 +144,8 @@ def main(args):
         pointpillars.eval()
         with torch.no_grad():
             for i, data_dict in enumerate(tqdm(val_dataloader)):
+                if i >= args.clip_epoch:
+                    break
                 if not args.no_cuda:
                     # move the tensors to the cuda
                     for key in data_dict:
@@ -211,6 +215,7 @@ if __name__ == '__main__':
     parser.add_argument('--max_epoch', type=int, default=160)
     parser.add_argument('--log_freq', type=int, default=8)
     parser.add_argument('--ckpt_freq_epoch', type=int, default=20)
+    parser.add_argument('--clip_epoch', type=int, default=20)
     parser.add_argument('--no_cuda', action='store_true',
                         help='whether to use cuda')
     args = parser.parse_args()

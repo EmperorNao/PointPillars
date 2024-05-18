@@ -32,14 +32,15 @@ def judge_difficulty(annotation_dict):
     return np.array(difficultys, dtype=np.int32)
 
 
-def create_data_info_pkl(data_root, data_type, prefix, label=True, db=False):
+def create_data_info_pkl(data_root, data_type, prefix, split=None, label=True, db=False):
     sep = os.path.sep
     print(f"Processing {data_type} data..")
     ids_file = os.path.join(CUR, 'dataset', 'ImageSetsNuscenes', f'{data_type}.txt')
     with open(ids_file, 'r') as f:
         ids = [id.strip() for id in f.readlines()]
     
-    split = 'training' if label else 'testing'
+    if split is None:
+        split = 'training' if label else 'testing'
 
     kitti_infos_dict = {}
     if db:
@@ -79,6 +80,9 @@ def create_data_info_pkl(data_root, data_type, prefix, label=True, db=False):
         if label:
             label_path = os.path.join(data_root, split, 'label_2', f'{id}.txt')
             annotation_dict = read_label(label_path)
+            if not len(annotation_dict):
+                print(f"Skipping {id} because it has no objects, probably")
+                continue
             annotation_dict['difficulty'] = judge_difficulty(annotation_dict)
             annotation_dict['num_points_in_gt'] = get_points_num_in_bbox(
                 points=reduced_lidar_points,
@@ -135,10 +139,10 @@ def main(args):
 
     ## 1. train: create data infomation pkl file && create reduced point clouds 
     ##           && create database(points in gt bbox) for data aumentation
-    kitti_train_infos_dict = create_data_info_pkl(data_root, 'train', prefix, db=True)
+    kitti_train_infos_dict = create_data_info_pkl(data_root, 'train', prefix, db=True, split="train")
 
     ## 2. val: create data infomation pkl file && create reduced point clouds
-    kitti_val_infos_dict = create_data_info_pkl(data_root, 'val', prefix)
+    kitti_val_infos_dict = create_data_info_pkl(data_root, 'val', prefix, split="val")
     
     ## 3. trainval: create data infomation pkl file
     kitti_trainval_infos_dict = {**kitti_train_infos_dict, **kitti_val_infos_dict}

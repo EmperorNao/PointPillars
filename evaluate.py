@@ -56,7 +56,7 @@ def do_eval(det_results, gt_results, CLASSES, saved_path):
         # 1.1, 2d bboxes iou
         gt_bboxes2d = gt_result['bbox'].astype(np.float32)
         det_bboxes2d = det_result['bbox'].astype(np.float32)
-        iou2d_v = iou2d(torch.from_numpy(gt_bboxes2d).cuda(), torch.from_numpy(det_bboxes2d).cuda())
+        iou2d_v = iou2d(torch.from_numpy(gt_bboxes2d), torch.from_numpy(det_bboxes2d))
         ious['bbox_2d'].append(iou2d_v.cpu().numpy())
 
         # 1.2, bev iou
@@ -69,19 +69,19 @@ def do_eval(det_results, gt_results, CLASSES, saved_path):
 
         gt_bev = np.concatenate([gt_location[:, [0, 2]], gt_dimensions[:, [0, 2]], gt_rotation_y[:, None]], axis=-1)
         det_bev = np.concatenate([det_location[:, [0, 2]], det_dimensions[:, [0, 2]], det_rotation_y[:, None]], axis=-1)
-        iou_bev_v = iou_bev(torch.from_numpy(gt_bev).cuda(), torch.from_numpy(det_bev).cuda())
+        iou_bev_v = iou_bev(torch.from_numpy(gt_bev), torch.from_numpy(det_bev))
         ious['bbox_bev'].append(iou_bev_v.cpu().numpy())
 
         # 1.3, 3dbboxes iou
         gt_bboxes3d = np.concatenate([gt_location, gt_dimensions, gt_rotation_y[:, None]], axis=-1)
         det_bboxes3d = np.concatenate([det_location, det_dimensions, det_rotation_y[:, None]], axis=-1)
-        iou3d_v = iou3d_camera(torch.from_numpy(gt_bboxes3d).cuda(), torch.from_numpy(det_bboxes3d).cuda())
+        iou3d_v = iou3d_camera(torch.from_numpy(gt_bboxes3d), torch.from_numpy(det_bboxes3d))
         ious['bbox_3d'].append(iou3d_v.cpu().numpy())
 
     MIN_IOUS = {
-        'Pedestrian': [0.5, 0.5, 0.5],
-        'Cyclist': [0.5, 0.5, 0.5],
-        'Car': [0.7, 0.7, 0.7]
+        'pedestrian': [0.5, 0.5, 0.5],
+        'bicycle': [0.5, 0.5, 0.5],
+        'car': [0.7, 0.7, 0.7]
     }
     MIN_HEIGHT = [40, 25, 25]
 
@@ -311,7 +311,7 @@ def main(args):
                 for key in data_dict:
                     for j, item in enumerate(data_dict[key]):
                         if torch.is_tensor(item):
-                            data_dict[key][j] = data_dict[key][j].cuda()
+                            data_dict[key][j] = data_dict[key][j]
             
             batched_pts = data_dict['batched_pts']
             batched_gt_bboxes = data_dict['batched_gt_bboxes']
@@ -360,7 +360,7 @@ def main(args):
                     format_result['rotation_y'].append(camera_bbox[6])
                     format_result['score'].append(score)
                 
-                write_label(format_result, os.path.join(saved_submit_path, f'{idx:06d}.txt'))
+                write_label(format_result, os.path.join(saved_submit_path, f'{idx}.txt'))
 
                 format_results[idx] = {k:np.array(v) for k, v in format_result.items()}
         

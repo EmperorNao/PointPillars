@@ -5,5 +5,8 @@ opencv_python
 #pointpillars.egg==info
 PyYAML
 setuptools
-#torch==2.0.0+cu111
+torch
+torchvision
+nuscenes-devkit
 tqdm
+tensorboard

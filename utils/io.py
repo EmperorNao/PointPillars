@@ -15,11 +15,14 @@ def write_pickle(results, file_path):
         pickle.dump(results, f)
 
 
-def read_points(file_path, dim=4):
+def read_points(file_path, dim=5):
     suffix = os.path.splitext(file_path)[1] 
     assert suffix in ['.bin', '.ply']
     if suffix == '.bin':
-        return np.fromfile(file_path, dtype=np.float32).reshape(-1, dim)
+        try:
+            return np.fromfile(file_path, dtype=np.float32).reshape(-1, dim)[:, :4]
+        except ValueError:
+            return np.fromfile(file_path, dtype=np.float32).reshape(-1, 4)[:, :4]
     else:
         raise NotImplementedError
 
@@ -73,19 +76,23 @@ def read_calib(file_path, extend_matrix=True):
 
 
 def read_label(file_path):
+    annotation = {}
     with open(file_path, 'r') as f:
         lines = f.readlines()
-    lines = [line.strip().split(' ') for line in lines]
-    annotation = {}
-    annotation['name'] = np.array([line[0] for line in lines])
-    annotation['truncated'] = np.array([line[1] for line in lines], dtype=np.float32)
-    annotation['occluded'] = np.array([line[2] for line in lines], dtype=np.int32)
-    annotation['alpha'] = np.array([line[3] for line in lines], dtype=np.float32)
-    annotation['bbox'] = np.array([line[4:8] for line in lines], dtype=np.float32)
-    annotation['dimensions'] = np.array([line[8:11] for line in lines], dtype=np.float32)[:, [2, 0, 1]] # hwl -> camera coordinates (lhw)
-    annotation['location'] = np.array([line[11:14] for line in lines], dtype=np.float32)
-    annotation['rotation_y'] = np.array([line[14] for line in lines], dtype=np.float32)
-    
+    try:
+        lines = [line.strip().split(' ') for line in lines]
+        annotation['name'] = np.array([line[0] for line in lines])
+        annotation['truncated'] = np.array([line[1] for line in lines], dtype=np.float32)
+        annotation['occluded'] = np.array([line[2] for line in lines], dtype=np.int32)
+        annotation['alpha'] = np.array([line[3] for line in lines], dtype=np.float32)
+        annotation['bbox'] = np.array([line[4:8] for line in lines], dtype=np.float32)
+        annotation['dimensions'] = np.array([line[8:11] for line in lines], dtype=np.float32)[:, [2, 0, 1]] # hwl -> camera coordinates (lhw)
+        annotation['location'] = np.array([line[11:14] for line in lines], dtype=np.float32)
+        annotation['rotation_y'] = np.array([line[14] for line in lines], dtype=np.float32)
+    except:
+        annotation = {}
+        print(lines)
+
     return annotation
 
 
