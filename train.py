@@ -37,8 +37,11 @@ def main(args):
 
     if not args.no_cuda:
         pointpillars = PointPillars(nclasses=args.nclasses).cuda()
+        model.load_state_dict(torch.load("pretrained/epoch_160.pth"))
     else:
         pointpillars = PointPillars(nclasses=args.nclasses)
+        model.load_state_dict(
+            torch.load("pretrained/epoch_160.pth", map_location=torch.device('cpu')))
     loss_func = Loss()
 
     max_iters = len(train_dataloader) * args.max_epoch
