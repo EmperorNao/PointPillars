@@ -306,6 +306,8 @@ def main(args):
         format_results = {}
         print('Predicting and Formatting the results.')
         for i, data_dict in enumerate(tqdm(val_dataloader)):
+            if i >= args.clip_epoch:
+                break            
             if not args.no_cuda:
                 # move the tensors to the cuda
                 for key in data_dict:
@@ -381,6 +383,7 @@ if __name__ == '__main__':
     parser.add_argument('--nclasses', type=int, default=3)
     parser.add_argument('--no_cuda', action='store_true',
                         help='whether to use cuda')
+    parser.add_argument('--clip_epoch', type=int, default=20)
     args = parser.parse_args()
 
     main(args)
