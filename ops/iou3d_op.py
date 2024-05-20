@@ -195,9 +195,7 @@ def iou_bev(box_a, box_b):
     return s_overlap / max(sa + sb - s_overlap, EPS)
 
 
-def boxes_iou_bev_gpu(boxes_a, boxes_b, ans_iou):
-    print(ans_iou.shape)
-    print(boxes_a.shape, boxes_b.shape)
+def boxes_iou_bev_gpu(boxes_a, boxes_b, ans_iou):   
     for i, box_a in enumerate(boxes_a):
         for j, box_b in enumerate(boxes_b):
             if (box_a == box_b).all():
