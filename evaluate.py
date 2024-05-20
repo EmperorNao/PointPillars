@@ -6,7 +6,7 @@ import pdb
 from tqdm import tqdm
 
 from utils import setup_seed, keep_bbox_from_image_range, \
-    keep_bbox_from_lidar_range, write_pickle, write_label, \
+    keep_bbox_from_lidar_range, read_pickle, write_pickle, write_label, \
     iou2d, iou3d_camera, iou_bev
 from dataset import Kitti, get_dataloader
 from model import PointPillars
@@ -39,6 +39,7 @@ def do_eval(det_results, gt_results, CLASSES, saved_path):
     gt_results: dict(id -> det_results)
     CLASSES: dict
     '''
+    print(len(det_results), len(gt_results))
     assert len(det_results) == len(gt_results)
     f = open(os.path.join(saved_path, 'eval_results.txt'), 'w')
 
@@ -50,33 +51,36 @@ def do_eval(det_results, gt_results, CLASSES, saved_path):
     }
     ids = list(sorted(gt_results.keys()))
     for id in ids:
-        gt_result = gt_results[id]['annos']
-        det_result = det_results[id]
+        try:
+            gt_result = gt_results[id]['annos']
+            det_result = det_results[id]
 
-        # 1.1, 2d bboxes iou
-        gt_bboxes2d = gt_result['bbox'].astype(np.float32)
-        det_bboxes2d = det_result['bbox'].astype(np.float32)
-        iou2d_v = iou2d(torch.from_numpy(gt_bboxes2d), torch.from_numpy(det_bboxes2d))
-        ious['bbox_2d'].append(iou2d_v.cpu().numpy())
+            # 1.1, 2d bboxes iou
+            gt_bboxes2d = gt_result['bbox'].astype(np.float32)
+            det_bboxes2d = det_result['bbox'].astype(np.float32)
+            iou2d_v = iou2d(torch.from_numpy(gt_bboxes2d), torch.from_numpy(det_bboxes2d))
+            ious['bbox_2d'].append(iou2d_v.cpu().numpy())
 
-        # 1.2, bev iou
-        gt_location = gt_result['location'].astype(np.float32)
-        gt_dimensions = gt_result['dimensions'].astype(np.float32)
-        gt_rotation_y = gt_result['rotation_y'].astype(np.float32)
-        det_location = det_result['location'].astype(np.float32)
-        det_dimensions = det_result['dimensions'].astype(np.float32)
-        det_rotation_y = det_result['rotation_y'].astype(np.float32)
+            # 1.2, bev iou
+            gt_location = gt_result['location'].astype(np.float32)
+            gt_dimensions = gt_result['dimensions'].astype(np.float32)
+            gt_rotation_y = gt_result['rotation_y'].astype(np.float32)
+            det_location = det_result['location'].astype(np.float32)
+            det_dimensions = det_result['dimensions'].astype(np.float32)
+            det_rotation_y = det_result['rotation_y'].astype(np.float32)
 
-        gt_bev = np.concatenate([gt_location[:, [0, 2]], gt_dimensions[:, [0, 2]], gt_rotation_y[:, None]], axis=-1)
-        det_bev = np.concatenate([det_location[:, [0, 2]], det_dimensions[:, [0, 2]], det_rotation_y[:, None]], axis=-1)
-        iou_bev_v = iou_bev(torch.from_numpy(gt_bev), torch.from_numpy(det_bev))
-        ious['bbox_bev'].append(iou_bev_v.cpu().numpy())
+            gt_bev = np.concatenate([gt_location[:, [0, 2]], gt_dimensions[:, [0, 2]], gt_rotation_y[:, None]], axis=-1)
+            det_bev = np.concatenate([det_location[:, [0, 2]], det_dimensions[:, [0, 2]], det_rotation_y[:, None]], axis=-1)
+            iou_bev_v = iou_bev(torch.from_numpy(gt_bev), torch.from_numpy(det_bev))
+            ious['bbox_bev'].append(iou_bev_v.cpu().numpy())
 
-        # 1.3, 3dbboxes iou
-        gt_bboxes3d = np.concatenate([gt_location, gt_dimensions, gt_rotation_y[:, None]], axis=-1)
-        det_bboxes3d = np.concatenate([det_location, det_dimensions, det_rotation_y[:, None]], axis=-1)
-        iou3d_v = iou3d_camera(torch.from_numpy(gt_bboxes3d), torch.from_numpy(det_bboxes3d))
-        ious['bbox_3d'].append(iou3d_v.cpu().numpy())
+            # 1.3, 3dbboxes iou
+            gt_bboxes3d = np.concatenate([gt_location, gt_dimensions, gt_rotation_y[:, None]], axis=-1)
+            det_bboxes3d = np.concatenate([det_location, det_dimensions, det_rotation_y[:, None]], axis=-1)
+            iou3d_v = iou3d_camera(torch.from_numpy(gt_bboxes3d), torch.from_numpy(det_bboxes3d))
+            ious['bbox_3d'].append(iou3d_v.cpu().numpy())
+        except Exception as e:
+            print(f"skip {id}: {str(e)}")
 
     MIN_IOUS = {
         'pedestrian': [0.5, 0.5, 0.5],
@@ -301,73 +305,76 @@ def main(args):
 
     pcd_limit_range = np.array([0, -40, -3, 70.4, 40, 0.0], dtype=np.float32)
 
-    model.eval()
-    with torch.no_grad():
-        format_results = {}
-        print('Predicting and Formatting the results.')
-        for i, data_dict in enumerate(tqdm(val_dataloader)):
-            if i >= args.clip_epoch:
-                break            
-            if not args.no_cuda:
-                # move the tensors to the cuda
-                for key in data_dict:
-                    for j, item in enumerate(data_dict[key]):
-                        if torch.is_tensor(item):
-                            data_dict[key][j] = data_dict[key][j]
+    if os.path.exists(os.path.join(saved_path, 'results.pkl')):
+        format_results = read_pickle(os.path.join(saved_path, 'results.pkl'))
+    else:
+        model.eval()
+        with torch.no_grad():
+            format_results = {}
+            print('Predicting and Formatting the results.')
+            for i, data_dict in enumerate(tqdm(val_dataloader)):
+                if i >= args.clip_epoch:
+                    break            
+                if not args.no_cuda:
+                    # move the tensors to the cuda
+                    for key in data_dict:
+                        for j, item in enumerate(data_dict[key]):
+                            if torch.is_tensor(item):
+                                data_dict[key][j] = data_dict[key][j]
+                
+                batched_pts = data_dict['batched_pts']
+                batched_gt_bboxes = data_dict['batched_gt_bboxes']
+                batched_labels = data_dict['batched_labels']
+                batched_difficulty = data_dict['batched_difficulty']
+                batch_results = model(batched_pts=batched_pts, 
+                                    mode='val',
+                                    batched_gt_bboxes=batched_gt_bboxes, 
+                                    batched_gt_labels=batched_labels)
+                # pdb.set_trace()
+                for j, result in enumerate(batch_results):
+                    format_result = {
+                        'name': [],
+                        'truncated': [],
+                        'occluded': [],
+                        'alpha': [],
+                        'bbox': [],
+                        'dimensions': [],
+                        'location': [],
+                        'rotation_y': [],
+                        'score': []
+                    }
+                    
+                    calib_info = data_dict['batched_calib_info'][j]
+                    tr_velo_to_cam = calib_info['Tr_velo_to_cam'].astype(np.float32)
+                    r0_rect = calib_info['R0_rect'].astype(np.float32)
+                    P2 = calib_info['P2'].astype(np.float32)
+                    image_shape = data_dict['batched_img_info'][j]['image_shape']
+                    idx = data_dict['batched_img_info'][j]['image_idx']
+                    result_filter = keep_bbox_from_image_range(result, tr_velo_to_cam, r0_rect, P2, image_shape)
+                    result_filter = keep_bbox_from_lidar_range(result_filter, pcd_limit_range)
+
+                    lidar_bboxes = result_filter['lidar_bboxes']
+                    labels, scores = result_filter['labels'], result_filter['scores']
+                    bboxes2d, camera_bboxes = result_filter['bboxes2d'], result_filter['camera_bboxes']
+                    for lidar_bbox, label, score, bbox2d, camera_bbox in \
+                        zip(lidar_bboxes, labels, scores, bboxes2d, camera_bboxes):
+                        format_result['name'].append(LABEL2CLASSES[label])
+                        format_result['truncated'].append(0.0)
+                        format_result['occluded'].append(0)
+                        alpha = camera_bbox[6] - np.arctan2(camera_bbox[0], camera_bbox[2])
+                        format_result['alpha'].append(alpha)
+                        format_result['bbox'].append(bbox2d)
+                        format_result['dimensions'].append(camera_bbox[3:6])
+                        format_result['location'].append(camera_bbox[:3])
+                        format_result['rotation_y'].append(camera_bbox[6])
+                        format_result['score'].append(score)
+                    
+                    write_label(format_result, os.path.join(saved_submit_path, f'{idx}.txt'))
+
+                    format_results[idx] = {k:np.array(v) for k, v in format_result.items()}
             
-            batched_pts = data_dict['batched_pts']
-            batched_gt_bboxes = data_dict['batched_gt_bboxes']
-            batched_labels = data_dict['batched_labels']
-            batched_difficulty = data_dict['batched_difficulty']
-            batch_results = model(batched_pts=batched_pts, 
-                                  mode='val',
-                                  batched_gt_bboxes=batched_gt_bboxes, 
-                                  batched_gt_labels=batched_labels)
-            # pdb.set_trace()
-            for j, result in enumerate(batch_results):
-                format_result = {
-                    'name': [],
-                    'truncated': [],
-                    'occluded': [],
-                    'alpha': [],
-                    'bbox': [],
-                    'dimensions': [],
-                    'location': [],
-                    'rotation_y': [],
-                    'score': []
-                }
-                
-                calib_info = data_dict['batched_calib_info'][j]
-                tr_velo_to_cam = calib_info['Tr_velo_to_cam'].astype(np.float32)
-                r0_rect = calib_info['R0_rect'].astype(np.float32)
-                P2 = calib_info['P2'].astype(np.float32)
-                image_shape = data_dict['batched_img_info'][j]['image_shape']
-                idx = data_dict['batched_img_info'][j]['image_idx']
-                result_filter = keep_bbox_from_image_range(result, tr_velo_to_cam, r0_rect, P2, image_shape)
-                result_filter = keep_bbox_from_lidar_range(result_filter, pcd_limit_range)
-
-                lidar_bboxes = result_filter['lidar_bboxes']
-                labels, scores = result_filter['labels'], result_filter['scores']
-                bboxes2d, camera_bboxes = result_filter['bboxes2d'], result_filter['camera_bboxes']
-                for lidar_bbox, label, score, bbox2d, camera_bbox in \
-                    zip(lidar_bboxes, labels, scores, bboxes2d, camera_bboxes):
-                    format_result['name'].append(LABEL2CLASSES[label])
-                    format_result['truncated'].append(0.0)
-                    format_result['occluded'].append(0)
-                    alpha = camera_bbox[6] - np.arctan2(camera_bbox[0], camera_bbox[2])
-                    format_result['alpha'].append(alpha)
-                    format_result['bbox'].append(bbox2d)
-                    format_result['dimensions'].append(camera_bbox[3:6])
-                    format_result['location'].append(camera_bbox[:3])
-                    format_result['rotation_y'].append(camera_bbox[6])
-                    format_result['score'].append(score)
-                
-                write_label(format_result, os.path.join(saved_submit_path, f'{idx}.txt'))
-
-                format_results[idx] = {k:np.array(v) for k, v in format_result.items()}
+            write_pickle(format_results, os.path.join(saved_path, 'results.pkl'))
         
-        write_pickle(format_results, os.path.join(saved_path, 'results.pkl'))
-    
     print('Evaluating.. Please wait several seconds.')
     do_eval(format_results, val_dataset.data_infos, CLASSES, saved_path)
 
