@@ -50,7 +50,7 @@ def do_eval(det_results, gt_results, CLASSES, saved_path):
         'bbox_3d': []
     }
     ids = list(sorted(gt_results.keys()))
-    for id in ids:
+    for id in tqdm(ids):
         try:
             gt_result = gt_results[id]['annos']
             det_result = det_results[id]
